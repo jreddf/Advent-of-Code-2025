@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+// Small struct to avoid multiple concurrent arrays
 typedef struct {
 	int row, col;
 	char state;
@@ -85,6 +86,8 @@ int main(int argc, char* argv[]) {
 
 		offset++;
 	}
+
+	// Copy the last row
 	memcpy(grid[rowCounter], &unformattedGrid[rowStart], rowSize);
 	grid[rowCounter++][rowSize] = 0;
 
@@ -105,14 +108,36 @@ int main(int argc, char* argv[]) {
 
 
 
-	// Search for all of the splits
-	// 		Core idea is to add splits to the stack
-	//		Then if we have reached the bottom row 
-	//		and there is nothing on the stack, we are done
-	//		otherwise pop a new position off the stack
-	//		and go down the other way. 
-	//
-	//		If a split has been visited, pop off of the stack
+	/* 
+		Search for all of the splits
+	 		Core idea is to add splits to the stack
+			Then if we have reached the bottom row 
+			and there is nothing on the stack, we are done
+			otherwise pop a new position off the stack
+			and go down the other way. 
+	
+			If a split has been visited, pop off of the stack
+	
+		Slightly modified for timelines
+			Same base idea, depth first on the splitters, but
+			when you pop off the stack and proceed right push the 
+			splitter back on with an updated state.
+	
+			Since every time we pop we go back to the previous splitter
+			the starting point has to be pushed. 
+	
+	 		There is a supplimentary matrix to hold the sum of timelines
+			at each splitter. Potential idea to minimize this would be
+			to create a hashmap of splitters with their position as a key
+
+			Since we store the location of the splitter that got us here
+			we just have to add the number of timelines from that splitter to
+			the "parent". After that we go back to the start point and cast the ray
+			hitting the first splitter and getting the count.
+	*/
+
+	// Some printf debugging has been commented out
+	// Lines 176-200 and 206-231 are essentialy the exact same, should refactor out
 	// -------------------------------------------------------
 
 	// Create the stack, we should never be exceeding the number of rows
@@ -125,6 +150,7 @@ int main(int argc, char* argv[]) {
 	long sum[rows][rowSize];
 	memset(sum, 0, sizeof(sum));
 
+	// Location and counter variables
 	int curRow = 0, curCol = startColumn;
 	int numSplits = 0;
 
